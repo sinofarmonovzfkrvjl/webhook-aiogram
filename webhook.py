@@ -1,22 +1,27 @@
 # app.py
-from aiohttp import web
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler
-from main import bot, dp
+from flask import Flask, request, jsonify
+from main import dp, bot
+from aiogram.types import Update
+import asyncio
 
-WEBHOOK_URL = 'https://webhook-aiogram.onrender.com/webhook/bot'
+app = Flask(__name__)
 
-async def on_startup(app: web.Application):
-    await bot.set_webhook(WEBHOOK_URL)
+WEBHOOK_PATH = "/webhook/bot"
+WEBHOOK_URL = f"https://webhook-aiogram.onrender.com{WEBHOOK_PATH}"
 
-async def on_shutdown(app: web.Application):
-    await bot.delete_webhook()
+@app.route(WEBHOOK_PATH, methods=['POST'])
+def telegram_webhook():
+    update = Update(**request.json)
+    asyncio.run(dp.feed_update(bot, update))
+    return jsonify({"status": "ok"})
 
-def main():
-    app = web.Application()
-    SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/webhook/bot")
-    app.on_startup.append(on_startup)
-    app.on_shutdown.append(on_shutdown)
-    web.run_app(app, host="0.0.0.0", port=8080)
+@app.before_first_request
+def setup_webhook():
+    asyncio.run(bot.set_webhook(WEBHOOK_URL))
 
-if __name__ == '__main__':
-    main()
+@app.teardown_appcontext
+def shutdown_webhook(exception=None):
+    asyncio.run(bot.delete_webhook())
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)
