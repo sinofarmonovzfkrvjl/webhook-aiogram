@@ -3,7 +3,7 @@ from aiohttp import web
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler
 from main import bot, dp
 
-WEBHOOK_URL = 'https://f8b8-82-215-107-238.ngrok-free.app/webhook/bot'
+WEBHOOK_URL = 'https://webhook-aiogram.onrender.com/webhook/bot'
 
 async def on_startup(app: web.Application):
     await bot.set_webhook(WEBHOOK_URL)
